@@ -254,8 +254,10 @@ window.boot = function () {
             if (data) {
                 context["decodeAudioData"](data.buffer, function (buffer) {
                     //success
-                    item.buffer = buffer;
-                    callback(null, item.id);
+                    // item.buffer = buffer;
+                    // item.content = buffer;
+                    // callback(null, item.id);
+                    callback(null, buffer);
                 }, function () {
                     //error
                     callback('decode error - ' + item.id, null);

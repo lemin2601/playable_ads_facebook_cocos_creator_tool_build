@@ -250,7 +250,7 @@ export namespace X {
         var fs = require('fs');
         var archiver = require('archiver');
         // create a file to stream archive data to.
-        var output = fs.createWriteStream(`${C.PATH_OUT}/playable-ads.zip`);
+        var output = fs.createWriteStream(`${C.PATH_OUT}/../playable-ads.zip`);
         var archive = archiver('zip', {
             zlib: { level: 9 } // Sets the compression level.
         });
