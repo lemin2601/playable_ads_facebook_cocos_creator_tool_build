@@ -6,6 +6,8 @@ import CleanCSS = require("clean-css")
 
 export namespace X {
     let C = {
+        // PATH_PROJECT:"C:\\Users\\pc\\projects\\playable\\playableAdsGsn",
+        PATH_PROJECT:"",
         PATH_TEMP:"temp",
         PATH_SRC:"build/web-mobile",
         PATH_OUT:"build/playable-ads", //./playable-ads/
@@ -19,6 +21,39 @@ export namespace X {
             'res'
         ])
     };
+    function getSrcPath(){
+        if(C.PATH_PROJECT != ""){
+            return `${C.PATH_PROJECT}/${C.PATH_SRC}`;
+        }
+        return `${C.PATH_SRC}`;
+    }
+    function getOutPath(){
+        if(C.PATH_PROJECT != ""){
+            return `${C.PATH_PROJECT}/${C.PATH_OUT}`;
+        }
+        return `${C.PATH_OUT}`;
+    }
+    function getIndexSrcPath(){
+        return `${getSrcPath()}/${C.INDEX_FILE_NAME}`;
+    }
+    function getIndexOutPath(){
+        return `${getOutPath()}/${C.INDEX_FILE_NAME}`;
+    }
+    function getResOutPath(){
+        return `${getOutPath()}/${C.RES_FILE_NAME}`;
+    }
+    function getMainTempPath(){
+        return `${C.PATH_TEMP}/main.js`;
+    }
+    function getHelpTempPath(){
+        return `${C.PATH_TEMP}/help.txt`;
+    }
+    function getMainOutPath(){
+        return `${getOutPath()}/main.js`;
+    }
+    function getZipOutPath(){
+        return `${getOutPath()}/../playable-ads.zip`;
+    }
     let res_object = {};
 
     /**
@@ -89,6 +124,7 @@ export namespace X {
 
         }
     }
+
     /**
      * @param filepath
      */
@@ -110,7 +146,7 @@ export namespace X {
         let src = `${PATH_SRC}/${name}`;
         get_all_child_file(src).forEach(path => {
             // 注意,存储时删除BASE_PATH前置
-            let store_path = path.replace(new RegExp(`^${PATH_SRC}/`), "")
+            let store_path = path.replace(`${PATH_SRC}/`, "");
             res_object[store_path] = get_file_content(path)
         });
     }
@@ -143,14 +179,14 @@ export namespace X {
 
     function writeResFile() {
         console.log(">Write res file.");
-        fs.writeFileSync(`${C.PATH_OUT}/${C.RES_FILE_NAME}`,`window.resMap=${JSON.stringify(res_object)}`); //clear data res.js
+        fs.writeFileSync(getResOutPath(),`window.resMap=${JSON.stringify(res_object)}`); //clear data res.js
         console.log(">Write res file done.");
     }
 
     function clearResFile() {
         console.log('>Init res file.');
         res_object ={};
-        fs.writeFileSync(`${C.PATH_OUT}/${C.RES_FILE_NAME}`,''); //clear data res.js
+        fs.writeFileSync(getResOutPath(),''); //clear data res.js
         console.log('>Init res file done.');
     }
 
@@ -165,8 +201,8 @@ export namespace X {
     function writeIndexHtml() {
         //1. get index.html
         console.log(">Write index.html.");
-        let filepath = `${C.PATH_SRC}/index.html`;
-        let filepathout = `${C.PATH_OUT}/index.html`;
+        let filepath = getIndexSrcPath();
+        let filepathout = getIndexOutPath();
         if(fs.statSync(filepath).isFile()){
             let indexFile =  fs.readFileSync(filepath);
             let html = getHtml(indexFile.toString());
@@ -206,8 +242,8 @@ export namespace X {
 
     function writeMainJS() {
         console.log(">Write main.js.");
-        let src = `${C.PATH_TEMP}/main.js`;
-        let dst = `${C.PATH_OUT}/main.js`;
+        let src = getMainTempPath();
+        let dst = getMainOutPath();
         console.log("Copy temp main.js:" + src +"->" + dst);
         let data = fs.readFileSync(src);
         fs.writeFileSync(dst, data);
@@ -241,7 +277,7 @@ export namespace X {
                 fs.rmdirSync(path);
             }
         };
-        deleteFolderRecursive(C.PATH_OUT);
+        deleteFolderRecursive(getOutPath());
         console.log('>.Clear Output path done.');
     }
 
@@ -250,7 +286,7 @@ export namespace X {
         var fs = require('fs');
         var archiver = require('archiver');
         // create a file to stream archive data to.
-        var output = fs.createWriteStream(`${C.PATH_OUT}/../playable-ads.zip`);
+        var output = fs.createWriteStream(getZipOutPath());
         var archive = archiver('zip', {
             zlib: { level: 9 } // Sets the compression level.
         });
@@ -287,7 +323,7 @@ export namespace X {
         archive.pipe(output);
         // append files from a sub-directory, putting its contents at the root of archive
 
-        archive.directory(C.PATH_OUT, false);
+        archive.directory(getOutPath(), false);
 
         // finalize the archive (ie we are done appending files but streams have to finish yet)
         // 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
@@ -300,23 +336,39 @@ export namespace X {
         //2. add res to index.html
         //3. zip file
 
-        let project_path = process.argv[2];
-        if(project_path){
-            if(fs.existsSync(project_path)){
-                if(fs.statSync(project_path).isDirectory()){
-                    C.PATH_OUT = `${project_path}/${C.PATH_OUT}`;
-                    C.PATH_SRC = `${project_path}/${C.PATH_SRC}`
+        var argv = require('minimist')(process.argv);
+        if(argv["p"]){
+            let project_path = argv["p"];
+            if(project_path){
+                if(fs.existsSync(project_path)){
+                    if(fs.statSync(project_path).isDirectory()){
+                        C.PATH_PROJECT = `${project_path}`;
+                    }
                 }
             }
         }
+        if(argv["path"]){
+            let project_path = argv["path"];
+            if(project_path){
+                if(fs.existsSync(project_path)){
+                    if(fs.statSync(project_path).isDirectory()){
+                        C.PATH_PROJECT = `${project_path}`;
+                    }
+                }
+            }
+        }
+
+        let src = getSrcPath();
+        let out = getOutPath();
+        let indexFile = getIndexSrcPath();
         //0. check error
         console.log('>. Check error.');
-        if(!fs.existsSync(C.PATH_SRC) || !fs.statSync(C.PATH_SRC).isDirectory()){
-            console.error("src not found or not is dir:" + C.PATH_SRC);
+        if(!fs.existsSync(src) || !fs.statSync(src).isDirectory()){
+            console.error("src not found or not is dir:" + src);
             return;
         }
-        if(!fs.existsSync(`${C.PATH_SRC}/${C.INDEX_FILE_NAME}`) ||  !fs.statSync(`${C.PATH_SRC}/${C.INDEX_FILE_NAME}`).isFile()){
-            console.error("index.html not found:" + C.PATH_SRC);
+        if(!fs.existsSync(indexFile) ||  !fs.statSync(indexFile).isFile()){
+            console.error("index.html not found:" + indexFile);
             return;
         }
         console.log('>. Check error done.');
@@ -327,13 +379,14 @@ export namespace X {
         //2. add res to index.html
         //3. zip file
         clearOutPath();
-        ensureDirectoryExistence(C.PATH_OUT);
+        ensureDirectoryExistence(out);
         clearResFile();
 
         console.log(">Copy all file to dest.");
-        fs.readdirSync(C.PATH_SRC).map(v => {
+
+        fs.readdirSync(src).map(v => {
             if(v != C.INDEX_FILE_NAME){
-                copyAllToDest(C.PATH_SRC,v,C.PATH_OUT);
+                copyAllToDest(src,v,out);
             }
         });
         console.log(">Copy all file to dest done.");

@@ -1,0 +1,8 @@
+Hướng dẫn build:
+npm run build -- -p [path_to_project] -z
+npm run build -- --project [path_to_project] --zip
+
+ví dụ:
+npm run build -- -p C:/projects/cocos_project
+npm run build -- -p C:/projects/cocos_project -z
+
